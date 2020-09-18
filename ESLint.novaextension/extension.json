@@ -56,8 +56,15 @@
     "commands": {
         "editor": [
             {
-                "title": "Fix ESLint issues",
+                "title": "Fix All Issues",
                 "command": "apexskier.eslint.command.fix",
+                "filters": {
+                    "syntaxes": ["javascript", "typescript", "jsx", "tsx"]
+                }
+            },
+            {
+                "title": "Apply a Suggested Fix",
+                "command": "apexskier.eslint.command.suggestForCursor",
                 "filters": {
                     "syntaxes": ["javascript", "typescript", "jsx", "tsx"]
                 }
