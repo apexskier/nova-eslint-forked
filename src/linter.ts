@@ -62,7 +62,9 @@ export class Linter {
     getSuggestions(editor: TextEditor) {
         const path = nova.path.normalize(editor.document.uri);
         const messages = this._messages.get(path) ?? [];
-        const issues = this._issues.get(path) as unknown as ReadonlyArray<Issue>;
+        const issues = (this._issues.get(path) as unknown) as ReadonlyArray<
+            Issue
+        >;
         if (messages.length != issues.length) {
             throw new Error("inconsistent data in Linter");
         }
