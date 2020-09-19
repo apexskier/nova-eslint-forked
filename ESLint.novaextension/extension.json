@@ -64,7 +64,7 @@
                 }
             },
             {
-                "title": "Apply a Suggested Fix",
+                "title": "Apply a Suggestion",
                 "command": "apexskier.eslint.command.suggestForCursor",
                 "when": "editorHasFocus",
                 "filters": {

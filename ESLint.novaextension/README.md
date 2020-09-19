@@ -7,8 +7,8 @@ files.
 
 ## Features
 
--   Automatically invokes ESLint and reports on issues found within your
-    JavaScript and TypeScript source files
--   Auto-fix command
--   Auto-fix on save
--   Use project eslint executable by default
+-   Inline ESLint issue reporting
+-   Fix All Issues command
+-   Apply a Suggestion command ([more information](https://eslint.org/docs/developer-guide/working-with-rules#providing-suggestions))
+-   Auto-fix on save preference
+-   Custom eslint installation preference
