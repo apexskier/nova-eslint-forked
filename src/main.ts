@@ -62,9 +62,15 @@ export function activate() {
     }
 
     if (
-      !["javascript", "typescript", "tsx", "jsx"].includes(
-        document.syntax ?? ""
-      )
+      ![
+        "javascript",
+        "typescript",
+        "tsx",
+        "jsx",
+        "vue",
+        "vue-html",
+        "html",
+      ].includes(document.syntax ?? "")
     ) {
       return;
     }
