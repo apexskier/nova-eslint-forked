@@ -58,6 +58,7 @@
             {
                 "title": "Fix All Issues",
                 "command": "apexskier.eslint.command.fix",
+                "when": "documentHasPath && editorHasFocus",
                 "filters": {
                     "syntaxes": ["javascript", "typescript", "jsx", "tsx"]
                 }
@@ -65,6 +66,7 @@
             {
                 "title": "Apply a Suggested Fix",
                 "command": "apexskier.eslint.command.suggestForCursor",
+                "when": "editorHasFocus",
                 "filters": {
                     "syntaxes": ["javascript", "typescript", "jsx", "tsx"]
                 }
