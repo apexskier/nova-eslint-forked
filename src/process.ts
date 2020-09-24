@@ -17,6 +17,8 @@ nova.workspace.config.onDidChange(
   eslintPath = await getEslintPath();
 })();
 
+const filePrefixRegex = /^file:/;
+
 export function runEslint(
   content: string,
   uri: string,
@@ -27,8 +29,15 @@ export function runEslint(
     return;
   }
 
+  const cleanFileName = decodeURI(uri).replace(filePrefixRegex, "");
   const process = new Process("/usr/bin/env", {
-    args: [eslintPath, "--format=json", "--stdin", "--stdin-filename", uri],
+    args: [
+      eslintPath,
+      "--format=json",
+      "--stdin",
+      "--stdin-filename",
+      cleanFileName,
+    ],
     cwd: nova.workspace.path,
     stdio: "pipe",
   });
