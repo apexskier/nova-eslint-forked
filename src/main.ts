@@ -68,8 +68,8 @@ export function activate() {
         "tsx",
         "jsx",
         "vue",
-        "vue-html",
         "html",
+        "markdown"
       ].includes(document.syntax ?? "")
     ) {
       return;

@@ -66,8 +66,8 @@
             "jsx",
             "tsx",
             "vue",
-            "vue-html",
-            "html"
+            "html",
+            "markdown"
           ]
         }
       },
@@ -82,8 +82,8 @@
             "jsx",
             "tsx",
             "vue",
-            "vue-html",
-            "html"
+            "html",
+            "markdown"
           ]
         }
       }
