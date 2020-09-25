@@ -2,8 +2,13 @@
 
 ## future
 
+### Added
+
+- Add support for HTML, Markdown, and Vue
+
 ### Changed
 
+- Performance improvements
 - Improved the "Apply a Suggestion" command
   - Add semi-experimental choice to auto-fix all without saving to disk
   - Slight UX changes
