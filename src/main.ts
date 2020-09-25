@@ -69,7 +69,7 @@ export function activate() {
         "jsx",
         "vue",
         "html",
-        "markdown"
+        "markdown",
       ].includes(document.syntax ?? "")
     ) {
       return;

@@ -34,7 +34,7 @@ export class Linter {
   private _issues = new IssueCollection();
   // note - the order of this should match that of _issues
   private _messages = new Map<string, Array<EslintLinter.LintMessage>>();
-  private _processesForPaths: { [path: string]: Process | undefined } = {};
+  private _processesForPaths: { [path: string]: Disposable | undefined } = {};
 
   lintDocument(document: TextDocument) {
     if (!document.syntax) {
@@ -48,7 +48,7 @@ export class Linter {
 
   private lintString(string: string, uri: string, syntax: string) {
     const path = nova.path.normalize(uri);
-    this._processesForPaths[path]?.kill();
+    this._processesForPaths[path]?.dispose();
     this._processesForPaths[path] = runEslint(
       string,
       path,
