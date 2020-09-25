@@ -1,10 +1,18 @@
 # Changelog
 
+## future
+
+### Changed
+
+- Improved the "Apply a Suggestion" command
+  - Add semi-experimental choice to auto-fix all without saving to disk
+  - Slight UX changes
+
 ## v1.1.0
 
 ### Added
 
-- Apply Suggestion editor command
+- "Apply a Suggestion" editor command
 
 ## v1.0.1
 
