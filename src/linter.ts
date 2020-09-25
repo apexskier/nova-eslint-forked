@@ -33,7 +33,10 @@ function positionToRange(
 export class Linter {
   private _issues = new IssueCollection();
   // note - the order of this should match that of _issues
-  private _messages = new Map<string, ReadonlyArray<EslintLinter.LintMessage>>();
+  private _messages = new Map<
+    string,
+    ReadonlyArray<EslintLinter.LintMessage>
+  >();
   private _processesForPaths: { [path: string]: Disposable | undefined } = {};
 
   lintDocument(document: TextDocument) {
