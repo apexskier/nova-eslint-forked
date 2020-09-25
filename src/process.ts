@@ -40,6 +40,11 @@ export function runEslint(
   const workspacePath = nova.workspace.path;
   const cleanFileName = decodeURI(uri).replace(filePrefixRegex, "");
 
+  // one idea for a performance improvement here would be to cache the needed results
+  // on a file path basis.
+  // Risks
+  // - if the eslint config or installed packages change it'll be hard to invalidate the cache
+  // - handling file renaming?
   function getConfig(
     // eslint-disable-next-line no-unused-vars
     callback: (config: Linter.Config) => void
