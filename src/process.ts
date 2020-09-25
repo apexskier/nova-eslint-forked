@@ -19,7 +19,7 @@ nova.workspace.config.onDidChange(
 
 const filePrefixRegex = /^file:/;
 
-const syntaxToRequiredPlugin: { [syntax: string]: string } = {
+const syntaxToRequiredPlugin: { [syntax: string]: string | undefined } = {
   html: "html",
   vue: "vue",
   markdown: "markdown",
@@ -30,7 +30,7 @@ export function runEslint(
   uri: string,
   syntax: string,
   // eslint-disable-next-line no-unused-vars
-  callback: (issues: Array<Linter.LintMessage>) => void
+  callback: (issues: ReadonlyArray<Linter.LintMessage>) => void
 ): Disposable {
   const disposable = new CompositeDisposable();
   if (!nova.workspace.path || !eslintPath) {
@@ -38,30 +38,28 @@ export function runEslint(
   }
   const eslint = eslintPath;
   const workspacePath = nova.workspace.path;
-
   const cleanFileName = decodeURI(uri).replace(filePrefixRegex, "");
 
-  // TODO: don't run configProcess if syntax doesn't have a required plugin, we can just proceed
-
-  const configProcess = new Process("/usr/bin/env", {
-    args: [eslint, "--format=json", "--print-config", cleanFileName],
-    cwd: workspacePath,
-    stdio: "pipe",
-  });
-  disposable.add({
-    dispose() {
-      configProcess.terminate();
-    },
-  });
-
-  let configStr = "";
-  disposable.add(configProcess.onStdout((line) => (configStr += line)));
-  disposable.add(configProcess.onStderr(handleError));
-  disposable.add(
+  function getConfig(
+    // eslint-disable-next-line no-unused-vars
+    callback: (config: Linter.Config) => void
+  ): void {
+    const configProcess = new Process("/usr/bin/env", {
+      args: [eslint, "--format=json", "--print-config", cleanFileName],
+      cwd: workspacePath,
+      stdio: "pipe",
+    });
+    disposable.add({
+      dispose() {
+        configProcess.terminate();
+      },
+    });
+    let configStr = "";
+    configProcess.onStdout((line) => (configStr += line));
+    configProcess.onStderr(handleError);
     configProcess.onDidExit((status) => {
       const configProcessWasTerminated = status === 15;
       if (status !== 0 && !configProcessWasTerminated) {
-        callback([]);
         throw new Error(
           `failed to get eslint config for ${cleanFileName}: ${status}`
         );
@@ -69,75 +67,81 @@ export function runEslint(
       if (configProcessWasTerminated) {
         return;
       }
+      callback(JSON.parse(configStr));
+    });
+    configProcess.start();
+  }
 
-      const config = JSON.parse(configStr);
+  function getLintMessages(
+    // eslint-disable-next-line no-unused-vars
+    callback: (issues: ReadonlyArray<Linter.LintMessage>) => void
+  ): void {
+    const lintProcess = new Process("/usr/bin/env", {
+      args: [
+        eslint,
+        "--format=json",
+        "--stdin",
+        "--stdin-filename",
+        cleanFileName,
+      ],
+      cwd: workspacePath,
+      stdio: "pipe",
+    });
+    disposable.add({
+      dispose() {
+        lintProcess.terminate();
+      },
+    });
 
-      const lintProcess = new Process("/usr/bin/env", {
-        args: [
-          eslint,
-          "--format=json",
-          "--stdin",
-          "--stdin-filename",
-          cleanFileName,
-        ],
-        cwd: workspacePath,
-        stdio: "pipe",
-      });
-      disposable.add({
-        dispose() {
-          lintProcess.terminate();
-        },
-      });
-
-      // check that we're good to validate
-      if (
-        syntaxToRequiredPlugin[syntax] &&
-        !config.plugins.includes(syntaxToRequiredPlugin[syntax])
-      ) {
+    let lintOutput = "";
+    lintProcess.onStdout((line) => (lintOutput += line));
+    lintProcess.onStderr(handleError);
+    lintProcess.onDidExit((status) => {
+      const lintProcessWasTerminated = status === 15;
+      // https://eslint.org/docs/user-guide/command-line-interface#exit-codes
+      const areLintErrors = status === 1;
+      const noLintErrors = status === 0;
+      if (!areLintErrors && !noLintErrors && !lintProcessWasTerminated) {
         callback([]);
+        throw new Error(`failed to lint ${cleanFileName}: ${status}`);
+      }
+      if (lintProcessWasTerminated) {
         return;
       }
+      if (noLintErrors) {
+        callback([]);
+      }
 
-      let lintOutput = "";
-      disposable.add(lintProcess.onStdout((line) => (lintOutput += line)));
-      disposable.add(lintProcess.onStderr(handleError));
-      disposable.add(
-        lintProcess.onDidExit((status) => {
-          const lintProcessWasTerminated = status === 15;
-          // https://eslint.org/docs/user-guide/command-line-interface#exit-codes
-          const areLintErrors = status === 1;
-          const noLintErrors = status === 0;
-          if (!areLintErrors && !noLintErrors && !lintProcessWasTerminated) {
-            callback([]);
-            throw new Error(`failed to lint ${cleanFileName}: ${status}`);
-          }
-          if (lintProcessWasTerminated) {
-            return;
-          }
-          if (noLintErrors) {
-            callback([]);
-          }
+      const parsedOutput = JSON.parse(lintOutput);
+      const messages = parsedOutput[0]["messages"] as Array<Linter.LintMessage>;
+      callback(messages);
+    });
 
-          const parsedOutput = JSON.parse(lintOutput);
-          const messages = parsedOutput[0]["messages"] as Array<
-            Linter.LintMessage
-          >;
-          callback(messages);
-        })
-      );
+    lintProcess.start();
 
-      lintProcess.start();
+    // TODO: Improve readable stream types
+    const writer = (lintProcess.stdin as any).getWriter();
+    writer.ready.then(() => {
+      writer.write(content);
+      writer.close();
+    });
+  }
 
-      // TODO: Improve readable stream types
-      const writer = (lintProcess.stdin as any).getWriter();
-      writer.ready.then(() => {
-        writer.write(content);
-        writer.close();
-      });
-    })
-  );
-
-  configProcess.start();
+  // if a plugin is required to parse this syntax we need to verify it's been found for this file
+  // check in the config for this file
+  const requiredPlugin = syntaxToRequiredPlugin[syntax];
+  if (requiredPlugin) {
+    getConfig((config) => {
+      if (!config.plugins?.includes(requiredPlugin)) {
+        callback([]);
+      } else {
+        getLintMessages(callback);
+      }
+    });
+  } else {
+    // if plugins aren't required, just lint right away
+    getLintMessages(callback);
+  }
 
   return disposable;
 }
