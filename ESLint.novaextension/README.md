@@ -19,7 +19,7 @@ Provides integration with ESLint to lint your code.
 
 ## Setup
 
-To use this, follow the [Getting Started with ESLint](https://eslint.org/docs/user-guide/getting-started) instructions. You'll need to have ESLint installed locally in your project (it should be installed in `${workspaceRoot}/node_modules/eslint`)—if you rely on a global or custom ESLint installation you can configure that by setting the "Path to ESLint executable" preference.
+To use this, follow the [Getting Started with ESLint](https://eslint.org/docs/user-guide/getting-started) instructions. You'll need to have ESLint installed locally in your project (it should be installed in `${workspaceRoot}/node_modules/eslint`). If you rely on a global or custom ESLint installation you can configure it by setting the "Path to ESLint executable" preference in Nova. This is accessible globally at Extensions > Extension Library… > ESLint > Preferences, and per-workspace at Project > Project Settings… > ESLint.
 
 To verify you've set up correctly, run `$(npm bin)/eslint ./path/to/file.js` on a file and make sure the output is correct (no output if you don't expect issues, expected issues if you do).
 
