@@ -1,5 +1,15 @@
 # Changelog
 
+## future
+
+### Changed
+
+- When fixing all issues, apply fixes atomically in editor before saving (make's them must faster)
+
+### Fixed
+
+- Fixed issues not showing up when extension is first activated
+
 ## v1.3.0
 
 ### Added
