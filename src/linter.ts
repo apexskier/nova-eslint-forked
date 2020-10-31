@@ -37,9 +37,7 @@ export class Linter {
   private _processesForPaths: { [path: string]: Disposable | undefined } = {};
 
   lintDocument(document: TextDocument) {
-    if (!document.syntax) {
-      return;
-    }
+
     const contentRange = new Range(0, document.length);
     const content = document.getTextInRange(contentRange);
     this._processesForPaths[document.uri]?.dispose();

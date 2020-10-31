@@ -47,7 +47,7 @@ export type ESLintRunResults = ReadonlyArray<ESLint.LintResult>;
 export function runEslint(
   content: string,
   path: string | null,
-  syntax: string,
+  syntax: string | null,
   // eslint-disable-next-line no-unused-vars
   callback: (err: Error | ESLintRunResults) => void
 ): Disposable {
@@ -162,7 +162,7 @@ export function runEslint(
 
   // if a plugin is required to parse this syntax we need to verify it's been found for this file
   // check in the config for this file
-  const requiredPlugin = syntaxToRequiredPlugin[syntax];
+  const requiredPlugin = syntax && syntaxToRequiredPlugin[syntax];
   if (requiredPlugin && cleanPath) {
     getConfig(cleanPath, (config) => {
       if (!config.plugins?.includes(requiredPlugin)) {
