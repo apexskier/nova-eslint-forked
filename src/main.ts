@@ -37,6 +37,13 @@ async function asyncActivate() {
       createSuggestionCommandHandler(linter)
     )
   );
+  compositeDisposable.add(
+    nova.commands.register("apexskier.eslint.command.lintAllEditors", () => {
+      nova.workspace.textEditors.forEach((editor) => {
+        linter.lintDocument(editor.document);
+      });
+    })
+  );
 
   compositeDisposable.add(nova.workspace.onDidAddTextEditor(watchEditor));
 

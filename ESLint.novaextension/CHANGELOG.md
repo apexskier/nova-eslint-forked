@@ -2,13 +2,18 @@
 
 ## future
 
+### Added
+
+- Support untitled (new, unsaved) documents
+
 ### Changed
 
 - When fixing all issues, apply fixes atomically in editor before saving (make's them must faster)
 
 ### Fixed
 
-- Fixed issues not showing up when extension is first activated
+- Fixed linting failing when extension is first activated
+- Automatically re-lint when preferences change
 
 ## v1.3.0
 

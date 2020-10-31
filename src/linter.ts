@@ -42,8 +42,28 @@ export class Linter {
     }
     const contentRange = new Range(0, document.length);
     const content = document.getTextInRange(contentRange);
-
-    this.lintString(content, document.uri, document.syntax);
+    this._processesForPaths[document.uri]?.dispose();
+    this._processesForPaths[document.uri] = runEslint(
+      content,
+      document.isUntitled ? null : document.uri,
+      document.syntax,
+      (output) => {
+        if (output instanceof Error) {
+          throw output;
+        }
+        delete this._processesForPaths[document.uri];
+        if (output.length !== 1) {
+          console.warn(JSON.stringify(output));
+          throw new Error("Unexpected results from linter");
+        }
+        const result = output[0];
+        this._results.set(document.uri, result);
+        this._issues.set(
+          document.uri,
+          result.messages.map(eslintOutputToIssue)
+        );
+      }
+    );
   }
 
   async fixEditor(editor: TextEditor) {
@@ -64,29 +84,6 @@ export class Linter {
         });
     });
     this._issues.set(editor.document.uri, newIssues);
-  }
-
-  private lintString(string: string, uri: string, syntax: string) {
-    const path = nova.path.normalize(uri);
-    this._processesForPaths[path]?.dispose();
-    this._processesForPaths[path] = runEslint(
-      string,
-      path,
-      syntax,
-      (output) => {
-        if (output instanceof Error) {
-          throw output;
-        }
-        delete this._processesForPaths[path];
-        if (output.length !== 1) {
-          console.warn(JSON.stringify(output));
-          throw new Error("Unexpected results from linter");
-        }
-        const result = output[0];
-        this._results.set(uri, result);
-        this._issues.set(uri, result.messages.map(eslintOutputToIssue));
-      }
-    );
   }
 
   removeIssues(uri: string) {
