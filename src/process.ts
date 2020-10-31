@@ -54,7 +54,9 @@ export function runEslint(
   const disposable = new CompositeDisposable();
   const workspacePath = nova.workspace.path || undefined;
   if (!nova.workspace.path) {
-    console.warn("ESLint used without a workspace path, this is unlikely to work properly");
+    console.warn(
+      "ESLint used without a workspace path, this is unlikely to work properly"
+    );
   }
   if (!eslintPath) {
     console.warn("No ESLint path");
