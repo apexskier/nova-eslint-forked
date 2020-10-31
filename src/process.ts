@@ -1,4 +1,4 @@
-import type { Linter } from "eslint";
+import type { Linter, ESLint } from "eslint";
 import { getEslintPath } from "./getEslintPath";
 import { getEslintConfig } from "./getEslintConfig";
 
@@ -26,10 +26,11 @@ nova.workspace.config.onDidChange(
     console.log("Updating ESLint config for workspace", eslintConfigPath);
   }
 );
-(async () => {
+
+export async function initialize() {
   eslintPath = await getEslintPath();
   eslintConfigPath = getEslintConfig();
-})();
+}
 
 const syntaxToRequiredPlugin: { [syntax: string]: string | undefined } = {
   html: "html",
@@ -37,20 +38,26 @@ const syntaxToRequiredPlugin: { [syntax: string]: string | undefined } = {
   markdown: "markdown",
 };
 
+export type ESLintRunResults = ReadonlyArray<ESLint.LintResult>;
+
 export function runEslint(
   content: string,
   uri: string,
   syntax: string,
   // eslint-disable-next-line no-unused-vars
-  callback: (issues: ReadonlyArray<Linter.LintMessage>) => void
+  callback: (err: Error | ESLintRunResults) => void
 ): Disposable {
   const disposable = new CompositeDisposable();
-  if (!nova.workspace.path || !eslintPath) {
+  const workspacePath = nova.workspace.path || undefined;
+  if (!nova.workspace.path) {
+    console.warn("ESLint used without a workspace path");
+  }
+  if (!eslintPath) {
+    console.warn("No ESLint path");
     return disposable;
   }
   const eslint = eslintPath;
   const eslintConfig = eslintConfigPath;
-  const workspacePath = nova.workspace.path;
   // remove file:/Volumes/Macintosh HD from uri
   const cleanFileName = "/" + decodeURI(uri.split("/").slice(3).join("/"));
 
@@ -64,7 +71,7 @@ export function runEslint(
     callback: (config: Linter.Config) => void
   ): void {
     const configProcess = new Process(eslint, {
-      args: ["--format=json", "--print-config", cleanFileName],
+      args: ["--print-config", cleanFileName],
       cwd: workspacePath,
       stdio: "pipe",
     });
@@ -91,9 +98,9 @@ export function runEslint(
     configProcess.start();
   }
 
-  function getLintMessages(
+  function getLintResults(
     // eslint-disable-next-line no-unused-vars
-    callback: (issues: ReadonlyArray<Linter.LintMessage>) => void
+    callback: (err: Error | ESLintRunResults) => void
   ): void {
     const lintArgs = [
       "--format=json",
@@ -124,19 +131,14 @@ export function runEslint(
       const areLintErrors = status === 1;
       const noLintErrors = status === 0;
       if (!areLintErrors && !noLintErrors && !lintProcessWasTerminated) {
-        callback([]);
-        throw new Error(`failed to lint ${cleanFileName}: ${status}`);
+        callback(new Error(`failed to lint (${status}) ${cleanFileName}`));
       }
       if (lintProcessWasTerminated) {
         return;
       }
-      if (noLintErrors) {
-        callback([]);
-      }
 
-      const parsedOutput = JSON.parse(lintOutput);
-      const messages = parsedOutput[0]["messages"] as Array<Linter.LintMessage>;
-      callback(messages);
+      const response = JSON.parse(lintOutput) as ESLintRunResults;
+      callback(response);
     });
 
     lintProcess.start();
@@ -155,27 +157,32 @@ export function runEslint(
   if (requiredPlugin) {
     getConfig((config) => {
       if (!config.plugins?.includes(requiredPlugin)) {
-        callback([]);
+        callback(
+          new Error(
+            `${syntax} requires installing eslint-plugin-${requiredPlugin}`
+          )
+        );
       } else {
-        getLintMessages(callback);
+        getLintResults(callback);
       }
     });
   } else {
     // if plugins aren't required, just lint right away
-    getLintMessages(callback);
+    getLintResults(callback);
   }
 
   return disposable;
 }
 
 export function fixEslint(path: string) {
-  if (!nova.workspace.path || !eslintPath) {
+  if (!eslintPath) {
+    console.warn("Can't find eslint executable");
     return;
   }
 
   const process = new Process(eslintPath, {
     args: ["--fix", "--format=json", path],
-    cwd: nova.workspace.path,
+    cwd: nova.workspace.path || undefined,
     stdio: "pipe",
   });
 
