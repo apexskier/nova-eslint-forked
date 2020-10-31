@@ -110,11 +110,9 @@ export class Linter implements Disposable {
     return [result.messages, issues];
   }
 
-  getMessageAtSelection(
-    editor: TextEditor
-  ): ESLintLinter.LintMessage | undefined {
+  getMessageAtSelection(editor: TextEditor): ESLintLinter.LintMessage[] {
     const [messages, issues] = this._getAllMessages(editor.document);
-    return messages.find((_, i) => {
+    return messages.filter((_, i) => {
       // annoyingly, nova doesn't provide a getter for this if col/line is set
       // const issueRange = issues[i].textRange!;
       const issue = issues[i];
