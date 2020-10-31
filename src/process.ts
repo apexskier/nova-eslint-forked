@@ -163,7 +163,7 @@ class ESLintProcess implements Disposable {
   }
 }
 
-export function runEslint(
+export function runLintPass(
   content: string,
   path: string | null,
   syntax: string | null,
@@ -187,28 +187,21 @@ export function runEslint(
     ? "/" + decodeURI(path).split("/").slice(5).join("/")
     : null;
 
-  function runLinter(
-    // eslint-disable-next-line no-unused-vars
-    callback: (err: Error | ESLintRunResults) => void
-  ): void {
-    const args = ["--format=json", "--stdin"];
-    if (cleanPath) {
-      args.unshift("--stdin-filename", cleanPath);
-    }
-    if (eslintConfig) {
-      args.unshift("--config", eslintConfig);
-    }
-    const process = new ESLintProcess(eslint, args, callback);
-    disposable.add(process);
-    process.write(content);
-  }
-
   disposable.add(
     verifyRequiredPlugin(eslint, syntax, cleanPath, (err) => {
       if (err) {
         callback(err);
       } else {
-        runLinter(callback);
+        const args = ["--format=json", "--stdin"];
+        if (cleanPath) {
+          args.unshift("--stdin-filename", cleanPath);
+        }
+        if (eslintConfig) {
+          args.unshift("--config", eslintConfig);
+        }
+        const process = new ESLintProcess(eslint, args, callback);
+        disposable.add(process);
+        process.write(content);
       }
     })
   );
@@ -216,7 +209,7 @@ export function runEslint(
   return disposable;
 }
 
-export function fixEslint(
+export function runFixPass(
   path: string,
   syntax: string | null,
   // eslint-disable-next-line no-unused-vars
@@ -237,25 +230,18 @@ export function fixEslint(
   // remove file:/Volumes/Macintosh HD from uri
   const cleanPath = "/" + decodeURI(path).split("/").slice(5).join("/");
 
-  function runFixer(
-    // eslint-disable-next-line no-unused-vars
-    callback: (err: Error | ESLintRunResults) => void
-  ): void {
-    const args = ["--fix", "--format=json"];
-    args.unshift(cleanPath);
-    if (eslintConfig) {
-      args.unshift("--config", eslintConfig);
-    }
-    const process = new ESLintProcess(eslint, args, callback);
-    disposable.add(process);
-  }
-
   disposable.add(
     verifyRequiredPlugin(eslint, syntax, cleanPath, (err) => {
       if (err) {
         callback(err);
       } else {
-        runFixer(callback);
+        const args = ["--fix", "--format=json"];
+        args.unshift(cleanPath);
+        if (eslintConfig) {
+          args.unshift("--config", eslintConfig);
+        }
+        const process = new ESLintProcess(eslint, args, callback);
+        disposable.add(process);
       }
     })
   );

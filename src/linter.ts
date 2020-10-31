@@ -1,6 +1,6 @@
 import type { ESLint, Linter as ESLintLinter } from "eslint";
 import { eslintOutputToIssue } from "./eslintOutputToIssue";
-import { ESLintRunResults, fixEslint, runEslint } from "./process";
+import { ESLintRunResults, runFixPass, runLintPass } from "./process";
 
 function positionToRange(
   document: TextDocument,
@@ -56,7 +56,7 @@ export class Linter implements Disposable {
     const contentRange = new Range(0, document.length);
     const content = document.getTextInRange(contentRange);
     this._processesForPaths[document.uri]?.dispose();
-    this._processesForPaths[document.uri] = runEslint(
+    this._processesForPaths[document.uri] = runLintPass(
       content,
       document.isUntitled ? null : document.uri,
       document.syntax,
@@ -66,7 +66,7 @@ export class Linter implements Disposable {
 
   fixDocumentExternal(document: TextDocument) {
     this._processesForPaths[document.uri]?.dispose();
-    this._processesForPaths[document.uri] = fixEslint(
+    this._processesForPaths[document.uri] = runFixPass(
       document.uri,
       document.syntax,
       this.createResultsHandler(document)
