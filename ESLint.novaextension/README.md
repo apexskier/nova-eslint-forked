@@ -9,7 +9,7 @@ Provides integration with ESLint to lint your code.
 - Inline ESLint issue reporting
 - "Fix All Issues" command
 - "Apply a Suggestion" command ([more information](https://eslint.org/docs/developer-guide/working-with-rules#providing-suggestions))
-- Quick suggestion to ignore an issue 
+- Quick suggestion to ignore an issue
 - Auto-fix on save preference
 - Custom ESLint install locations
 - Custom ESLint config file location
