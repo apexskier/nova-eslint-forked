@@ -30,34 +30,36 @@ function isFixAll(x: FixChoiceType): x is { fixAll: true } {
 export function createSuggestionCommandHandler(linter: Linter) {
   return async (editor: TextEditor) => {
     const choices: Array<
-      { title: string } & ({ fix: Rule.Fix } | { fixAll: true })
+      { title: string } & ({ fix: Rule.Fix; clear(): void } | { fixAll: true })
     > = [];
-    const messages = linter.getMessageAtSelection(editor);
+    const messages = linter.interactWithMessagesAtSelection(editor);
 
     // preferred action: apply suggested fix
-    for (const message of messages) {
+    for (const { message, clear } of messages) {
       if (message.fix) {
         choices.push({
           title: `Fix this ${message.ruleId} problem`,
           fix: message.fix,
+          clear,
         });
       }
     }
 
     // all other secondary suggestions
-    for (const message of messages) {
+    for (const { message, clear } of messages) {
       if (message.suggestions) {
         choices.push(
           ...message.suggestions.map((suggestion) => ({
             title: suggestion.desc,
             fix: suggestion.fix,
+            clear,
           }))
         );
       }
     }
 
     // add ignore rule comment suggestion
-    for (const message of messages) {
+    for (const { message, clear } of messages) {
       const linesRange = editor.getLineRangeForRange(editor.selectedRange);
       let alreadyHasPrecedingIgnoreComment = false;
       if (linesRange.start > 0) {
@@ -73,6 +75,7 @@ export function createSuggestionCommandHandler(linter: Linter) {
               text: `${priorLine.trimRight()}, ${message.ruleId}\n`,
               range: [priorLineRange.start, priorLineRange.end],
             },
+            clear,
           });
         }
       }
@@ -85,6 +88,7 @@ export function createSuggestionCommandHandler(linter: Linter) {
             text: `${leadingWhitespace}// eslint-disable-next-line ${message.ruleId}\n${linesForSelected}`,
             range: [linesRange.start, linesRange.end],
           },
+          clear,
         });
       }
     }
@@ -101,10 +105,11 @@ export function createSuggestionCommandHandler(linter: Linter) {
     if (isFixAll(choice)) {
       nova.commands.invoke("apexskier.eslint.command.fix", editor);
     } else {
-      const { fix } = choice;
+      const { fix, clear } = choice;
       const [start, end] = fix.range;
       const range = new Range(start, end);
       const originalSelection = editor.selectedRange;
+      clear();
       await editor.edit((edit) => {
         edit.replace(range, fix.text);
       });
