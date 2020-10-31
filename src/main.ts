@@ -1,5 +1,5 @@
 import { Linter } from "./linter";
-import { fixEslint, initialize } from "./process";
+import { initialize } from "./process";
 import { shouldFixOnSave } from "./shouldFixOnSave";
 import { createSuggestionCommandHandler } from "./suggestionCommand";
 
@@ -9,6 +9,7 @@ async function asyncActivate() {
   await initialize();
 
   const linter = new Linter();
+  compositeDisposable.add(linter);
 
   // eslint-disable-next-line no-unused-vars
   async function fix(workspace: Workspace, editor: TextEditor): Promise<void>;
@@ -23,8 +24,15 @@ async function asyncActivate() {
       : maybeEditor!;
 
     await linter.fixEditor(editor);
-    if (editor.document.path) {
-      fixEslint(editor.document.path);
+    const p = editor.document.path;
+    // this might not be technically necessary, but will run a fix in an external process, which
+    // will help if linting hasn't processed before this is run
+    if (p) {
+      const d = editor.onDidSave(() => {
+        d.dispose();
+        linter.fixDocumentExternal(editor.document);
+      });
+      editor.save();
     }
   }
 

@@ -1,6 +1,6 @@
 import type { ESLint, Linter as ESLintLinter } from "eslint";
 import { eslintOutputToIssue } from "./eslintOutputToIssue";
-import { runEslint } from "./process";
+import { ESLintRunResults, fixEslint, runEslint } from "./process";
 
 function positionToRange(
   document: TextDocument,
@@ -30,11 +30,27 @@ function positionToRange(
   return new Range(rangeStart, rangeEnd);
 }
 
-export class Linter {
+export class Linter implements Disposable {
   private _issues = new IssueCollection();
   // note - the order of this should match that of _issues
   private _results = new Map<string, ESLint.LintResult>();
   private _processesForPaths: { [path: string]: Disposable | undefined } = {};
+
+  private createResultsHandler(document: TextDocument) {
+    return (output: Error | ESLintRunResults) => {
+      if (output instanceof Error) {
+        throw output;
+      }
+      delete this._processesForPaths[document.uri];
+      if (output.length !== 1) {
+        console.warn(JSON.stringify(output));
+        throw new Error("Unexpected results from linter");
+      }
+      const result = output[0];
+      this._results.set(document.uri, result);
+      this._issues.set(document.uri, result.messages.map(eslintOutputToIssue));
+    };
+  }
 
   lintDocument(document: TextDocument) {
     const contentRange = new Range(0, document.length);
@@ -44,22 +60,16 @@ export class Linter {
       content,
       document.isUntitled ? null : document.uri,
       document.syntax,
-      (output) => {
-        if (output instanceof Error) {
-          throw output;
-        }
-        delete this._processesForPaths[document.uri];
-        if (output.length !== 1) {
-          console.warn(JSON.stringify(output));
-          throw new Error("Unexpected results from linter");
-        }
-        const result = output[0];
-        this._results.set(document.uri, result);
-        this._issues.set(
-          document.uri,
-          result.messages.map(eslintOutputToIssue)
-        );
-      }
+      this.createResultsHandler(document)
+    );
+  }
+
+  fixDocumentExternal(document: TextDocument) {
+    this._processesForPaths[document.uri]?.dispose();
+    this._processesForPaths[document.uri] = fixEslint(
+      document.uri,
+      document.syntax,
+      this.createResultsHandler(document)
     );
   }
 
@@ -122,5 +132,11 @@ export class Linter {
           issueRange.containsIndex(editor.selectedRange.start))
       );
     });
+  }
+
+  dispose() {
+    for (const p in this._processesForPaths) {
+      this._processesForPaths[p]?.dispose();
+    }
   }
 }
